@@ -49,7 +49,7 @@ const STATE = {
   entry: { id: 'dsh-doubao', name: 'dsh-doubao', overridden: true },
   config: {
     enabled: false, promptEnabled: false, transformEnabled: false, mode: 'smart',
-    intensity: 70, barrage: 12, negationCount: 24, negationRounds: 2,
+    level: 'medium', intensity: 50, barrage: 8, negationCount: 15, negationRounds: 2,
     openers: 1, transitions: 1, diagnoses: 2, boundaries: 2, fillers: 3,
     serviceClosers: 1, refusalChance: 8, dilate: 2, streamGuardChars: 120,
     skipCodeBlocks: true, skipToolTurns: true, customIntensifiers: '',
@@ -59,7 +59,7 @@ const STATE = {
   raw: {},
   defaults: {},
   limits: {
-    intensity: [0, 100], barrage: [0, 40], negationCount: [0, 80], negationRounds: [1, 6],
+    barrage: [0, 40], negationCount: [0, 80], negationRounds: [1, 6],
     openers: [0, 3], transitions: [0, 3], diagnoses: [0, 4], boundaries: [0, 4],
     fillers: [0, 8], serviceClosers: [0, 3], refusalChance: [0, 100], dilate: [0, 4],
     streamGuardChars: [20, 2000], seed: [0, 2147483647],
@@ -85,6 +85,8 @@ const sandbox = {
   window: { __ModuleLoader__: { load: (value) => { registration = value; } } },
   fetch: globalThis.fetch,
   console,
+  setTimeout,
+  clearTimeout,
 };
 vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL('../client.js', import.meta.url), 'utf8'), sandbox);
@@ -193,7 +195,13 @@ console.log(`节点 ${nodes.length}，文本块 ${nodes.filter((n) => n.kind ===
 
 // 假 locale 的 t() 返回 key 本身，所以这里断言 key
 assert.ok(texts.includes('title'), '标题缺失');
-assert.ok(texts.includes('intensity'), '强度区缺失');
+assert.ok(texts.includes('level'), '强度档位区缺失');
+assert.ok(texts.includes('levelMax'), '档位按钮缺失');
+assert.equal(
+  nodes.filter((n) => n.kind === 'element' && n.type === 'button' && String(n.props.className).includes('db-level')).length >= 5,
+  true,
+  '档位按钮数量不足',
+);
 assert.ok(texts.includes('customIntensifiers'), '自定义区缺失');
 assert.ok(texts.includes('skipPurposes'), '高级区缺失');
 assert.equal(textareas.length, 3, '自定义词条应为 3 个输入框');
@@ -221,6 +229,25 @@ assert.equal(
   true,
   '自定义词条标题不全',
 );
+
+// 点「拉满」应套上该档参数
+{
+  const buttons = nodes.filter((n) => n.kind === 'element' && n.type === 'button' && String(n.props.className).includes('db-level'));
+  const maxButton = buttons[buttons.length - 1];
+  assert.ok(maxButton && typeof maxButton.props.onClick === 'function', '档位按钮不可点');
+  maxButton.props.onClick();
+  pending = true;
+  hookIndex = 0;
+  effects.length = 0;
+  tree = sectionInstance.type(sectionInstance.props);
+  for (const effect of effects) effect();
+  const after = flatten(tree);
+  const label = after
+    .filter((n) => n.kind === 'element' && n.type === 'span' && String(n.props.className).includes('db-num'))
+    .map((n) => Number(n.props.children?.[0]));
+  assert.ok(label.includes(20), `点拉满后排比条数应为 20，实际 ${label.join(',')}`);
+  assert.ok(label.includes(45), `点拉满后否定项应为 45，实际 ${label.join(',')}`);
+}
 
 // 预览按钮存在
 assert.ok(nodes.some((n) => n.kind === 'element' && n.type === 'pre'), '预览区缺失');

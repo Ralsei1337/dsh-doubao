@@ -36,10 +36,17 @@ window.__ModuleLoader__.load({
       modeSmart: 'smart（推荐）',
       modeAlways: 'always（最激进）',
       modeBuffer: 'buffer（不流式）',
-      strength: '强度',
-      strengthDesc: '总强度会等比缩放下面所有段落的长度。0 = 完全关闭。',
-      intensity: '总强度',
-      intensityHint: '0–100。低强度只留开头结尾，高强度六段全开。',
+      strength: '强度档位',
+      strengthDesc: '选一档就是一组确定参数，不是连续旋钮。选完还能单独微调下面的数字。',
+      level: '总强度档位',
+      levelHint: '五档：关闭 / 轻度 / 标准 / 重度 / 拉满。点一档会把下面的参数一起套上。',
+      levelOff: '关闭',
+      levelLight: '轻度',
+      levelMedium: '标准',
+      levelHeavy: '重度',
+      levelMax: '拉满',
+      levelCustom: '自定义',
+      levelSummary: '当前档位会写进配置；微调数字不会改档位。',
       barrage: '排比条数',
       barrageHint: '「我给你最A、最B……的结论」里「最X」的个数，0–40。',
       negationCount: '否定项条数',
@@ -127,10 +134,17 @@ window.__ModuleLoader__.load({
       modeSmart: 'smart (recommended)',
       modeAlways: 'always (most aggressive)',
       modeBuffer: 'buffer (no streaming)',
-      strength: 'Strength',
-      strengthDesc: 'Scales every section below. 0 disables everything.',
-      intensity: 'Overall intensity',
-      intensityHint: '0–100. Low keeps only the opening and closing; high opens all six sections.',
+      strength: 'Strength level',
+      strengthDesc: 'Each level is a fixed parameter set, not a continuous dial. You can still fine-tune the numbers below.',
+      level: 'Strength level',
+      levelHint: 'Five levels: off / light / standard / heavy / max. Picking one applies its parameters.',
+      levelOff: 'Off',
+      levelLight: 'Light',
+      levelMedium: 'Standard',
+      levelHeavy: 'Heavy',
+      levelMax: 'Max',
+      levelCustom: 'Custom',
+      levelSummary: 'The level is saved with the config; tweaking numbers does not change it.',
       barrage: 'Superlative count',
       barrageHint: 'How many 最X items in the opening barrage, 0–40.',
       negationCount: 'Negation item count',
@@ -188,6 +202,16 @@ window.__ModuleLoader__.load({
       hint: 'Saving writes the current profile patch and reloads the plugin; no DSH restart needed.',
     };
 
+    // 与 lib/config.js 的 LEVEL_PRESETS 保持一致；改一处要改两处
+    // 与 lib/config.js 的 LEVEL_PRESETS 保持一致；改一处要改两处
+    const PRESETS = {
+      off: { barrage: 0, negationCount: 0, negationRounds: 1, diagnoses: 0, boundaries: 0, fillers: 0, dilate: 0, openers: 0, transitions: 0, serviceClosers: 0, refusalChance: 0, templateShare: 0 },
+      light: { barrage: 3, negationCount: 4, negationRounds: 1, diagnoses: 1, boundaries: 1, fillers: 1, dilate: 0, openers: 0, transitions: 0, serviceClosers: 1, refusalChance: 0, templateShare: 25 },
+      medium: { barrage: 5, negationCount: 8, negationRounds: 2, diagnoses: 1, boundaries: 1, fillers: 2, dilate: 1, openers: 1, transitions: 1, serviceClosers: 1, refusalChance: 3, templateShare: 40 },
+      heavy: { barrage: 10, negationCount: 18, negationRounds: 3, diagnoses: 2, boundaries: 2, fillers: 3, dilate: 2, openers: 2, transitions: 2, serviceClosers: 2, refusalChance: 8, templateShare: 60 },
+      max: { barrage: 20, negationCount: 45, negationRounds: 4, diagnoses: 3, boundaries: 3, fillers: 5, dilate: 3, openers: 3, transitions: 3, serviceClosers: 3, refusalChance: 15, templateShare: 100 },
+    };
+
     const STYLE = `
       .db-root { display: flex; flex-direction: column; gap: 14px; padding: 4px 2px 32px; color: var(--dsw-alias-text-primary, #e8e8ea); }
       .db-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -215,6 +239,11 @@ window.__ModuleLoader__.load({
       .db-slider { display: flex; align-items: center; gap: 10px; flex: none; }
       .db-slider input[type=range] { width: 132px; accent-color: #ff8a4c; }
       .db-num { width: 46px; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; color: #ffb184; }
+      .db-levels { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .db-level { appearance: none; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); color: inherit; border-radius: 9px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+      .db-level:hover { background: rgba(255,255,255,.1); }
+      .db-level-on { background: #ff8a4c; border-color: #ff8a4c; color: #1a1206; font-weight: 600; }
+      .db-level-hint { cursor: default; opacity: .7; border-style: dashed; }
       .db-switch { position: relative; width: 42px; height: 24px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); cursor: pointer; flex: none; transition: background .15s, border-color .15s; }
       .db-switch-on { background: rgba(255,138,76,.75); border-color: #ff8a4c; }
       .db-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
@@ -296,6 +325,34 @@ window.__ModuleLoader__.load({
             onChange: (event) => props.onChange(Number(event.target.value)),
           }),
           h('span', { className: 'db-num' }, String(props.value)),
+        ),
+      );
+    }
+
+    function LevelPicker(props) {
+      const options = [
+        { value: 'off', label: props.t('levelOff') },
+        { value: 'light', label: props.t('levelLight') },
+        { value: 'medium', label: props.t('levelMedium') },
+        { value: 'heavy', label: props.t('levelHeavy') },
+        { value: 'max', label: props.t('levelMax') },
+      ];
+      const current = props.value;
+      const diverged = props.diverged;
+      return h('div', { className: 'db-row db-row-stack' },
+        h('div', { className: 'db-row-text' },
+          h('span', { className: 'db-row-title' }, props.label),
+          h('span', { className: 'db-row-desc' }, props.description),
+        ),
+        h('div', { className: 'db-levels' },
+          ...options.map((option) => h('button', {
+            key: option.value,
+            type: 'button',
+            className: `db-level ${current === option.value ? 'db-level-on' : ''}`,
+            'aria-pressed': current === option.value ? 'true' : 'false',
+            onClick: () => props.onChange(option.value),
+          }, option.label)),
+          diverged ? h('span', { className: 'db-level db-level-hint' }, props.t('levelCustom')) : null,
         ),
       );
     }
@@ -428,6 +485,18 @@ window.__ModuleLoader__.load({
         });
       }, [preview]);
 
+      // 点档位 = 套这组参数；之后微调数字不改档位，只标记「已偏离」
+      const applyLevel = React.useCallback((level) => {
+        setDraft((current) => {
+          if (!current) return current;
+          const preset = PRESETS[level] ?? {};
+          const next = { ...current, level, ...preset };
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => preview(next), 200);
+          return next;
+        });
+      }, [preview]);
+
       const save = React.useCallback(async () => {
         setSaving(true);
         setNotice(null);
@@ -476,6 +545,8 @@ window.__ModuleLoader__.load({
           h('div', { className: 'db-card db-warning db-error' }, error || t('loadError')));
       }
 
+      const preset = PRESETS[draft.level];
+      const diverged = Boolean(preset) && Object.entries(preset).some(([key, value]) => draft[key] !== value);
       const limits = state?.limits ?? {};
       const bound = (key) => limits[key] ?? [0, 100];
       const modeOptions = [
@@ -507,6 +578,7 @@ window.__ModuleLoader__.load({
             `${t('promptEnabled')} · ${draft.promptEnabled ? t('on') : t('off')}`),
           h('span', { className: `db-pill ${draft.transformEnabled ? 'db-pill-on' : 'db-pill-off'}` },
             `${t('transformEnabled')} · ${draft.transformEnabled ? t('on') : t('off')}`),
+          h('span', { className: 'db-pill' }, `${t('level')}: ${t(`level${draft.level[0].toUpperCase()}${draft.level.slice(1)}`)}`),
           h('span', { className: 'db-pill' }, `${t('mode')}: ${draft.mode}`),
           h('span', { className: 'db-pill' }, `${t('lexiconTotal')} ${state?.lexicon?.total ?? 0}`),
           h('span', { className: 'db-pill' }, state?.entry?.overridden ? t('override') : t('inherited')),
@@ -528,7 +600,14 @@ window.__ModuleLoader__.load({
         h('section', { className: 'db-card' },
           h('h2', { className: 'db-card-title' }, t('strength')),
           h('p', { className: 'db-card-desc' }, t('strengthDesc')),
-          h(Slider, { label: t('intensity'), description: t('intensityHint'), value: draft.intensity, min: bound('intensity')[0], max: bound('intensity')[1], onChange: (v) => update('intensity', v) }),
+          h(LevelPicker, {
+            t,
+            label: t('level'),
+            description: t('levelHint'),
+            value: draft.level,
+            diverged: diverged,
+            onChange: applyLevel,
+          }),
           h(Slider, { label: t('barrage'), description: t('barrageHint'), value: draft.barrage, min: bound('barrage')[0], max: bound('barrage')[1], onChange: (v) => update('barrage', v) }),
           h(Slider, { label: t('negationCount'), description: t('negationCountHint'), value: draft.negationCount, min: bound('negationCount')[0], max: bound('negationCount')[1], onChange: (v) => update('negationCount', v) }),
           h(Slider, { label: t('negationRounds'), description: t('negationRoundsHint'), value: draft.negationRounds, min: bound('negationRounds')[0], max: bound('negationRounds')[1], onChange: (v) => update('negationRounds', v) }),

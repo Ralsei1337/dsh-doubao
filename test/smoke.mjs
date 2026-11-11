@@ -84,9 +84,9 @@ const cfg = normalizeConfig({ ...DEFAULTS, seed: 12345 });
 
 // 2. 强度 0 = 完全关闭
 {
-  const off = expandText('正文。', normalizeConfig({ ...DEFAULTS, intensity: 0 }), undefined);
+  const off = expandText('正文。', normalizeConfig({ ...DEFAULTS, level: 'off' }), undefined);
   assert.equal(off.trim(), '正文。');
-  assert.equal(shouldTransform(normalizeConfig({ ...DEFAULTS, intensity: 0 })), false);
+  assert.equal(shouldTransform(normalizeConfig({ ...DEFAULTS, level: 'off' })), false);
   console.log('[2] 强度 0 关闭 OK');
 }
 

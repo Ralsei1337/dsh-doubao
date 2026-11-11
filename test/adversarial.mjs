@@ -195,9 +195,9 @@ await checkAsync('T12 两个文本块只给第一个加前缀', async () => {
   assert.equal(second.block.text, '第二块。', '第二块被重复加前缀');
 });
 
-await checkAsync('T13 强度 0 完全原样透传', async () => {
+await checkAsync('T13 档位 off 完全原样透传', async () => {
   const chunks = textBlock(['原样。']);
-  const out = await collect(transformStream(() => gen(chunks), base({ intensity: 0 })));
+  const out = await collect(transformStream(() => gen(chunks), base({ level: 'off' })));
   assert.deepEqual(out, chunks);
 });
 
@@ -268,8 +268,8 @@ check('R04 自定义词条并入且优先', () => {
 check('R05 种子可复现', () => {
   assert.equal(previewSample(base()), previewSample(base()));
 });
-check('R06 强度 0 时不加任何壳', () => {
-  assert.equal(expandText('正文。', base({ intensity: 0 })).trim(), '正文。');
+check('R06 档位 off 时不加任何壳', () => {
+  assert.equal(expandText('正文。', base({ level: 'off' })).trim(), '正文。');
 });
 check('R07 只有空白字符的正文', () => {
   assert.equal(expandText('   \n\n  ', base()).trim(), '');
@@ -277,17 +277,19 @@ check('R07 只有空白字符的正文', () => {
 
 console.log('\n[config]');
 check('C01 非数值回落默认，越界夹到边界', () => {
-  const cfg = normalizeConfig({ intensity: 'x', barrage: -5, negationRounds: 99, mode: 'nope' });
-  assert.equal(cfg.intensity, DEFAULTS.intensity, '非数值应回落默认');
+  const cfg = normalizeConfig({ level: 'medium', barrage: -5, negationRounds: 99, mode: 'nope' });
+  assert.equal(cfg.level, 'medium');
   assert.equal(cfg.barrage, 0, '越界应夹到下限');
   assert.equal(cfg.negationRounds, 6, '越界应夹到上限');
   assert.equal(cfg.mode, DEFAULTS.mode, '非法模式应回落默认');
 });
-check('C02 浮点数被截断', () => {
-  assert.equal(normalizeConfig({ intensity: 70.9 }).intensity, 70);
+check('C02 浮点数被截断、旧 intensity 折算成档位', () => {
+  assert.equal(normalizeConfig({ barrage: 3.9 }).barrage, 3);
+  assert.equal(normalizeConfig({ intensity: 70.9 }).level, 'heavy');
+  assert.equal(normalizeConfig({ intensity: 0 }).level, 'off');
 });
-check('C03 强度 0 时所有段落归零', () => {
-  const s = scaleByIntensity(normalizeConfig({ intensity: 0 }));
+check('C03 档位 off 时所有段落归零', () => {
+  const s = scaleByIntensity(normalizeConfig({ level: 'off' }));
   assert.equal(s.barrage, 0);
   assert.equal(s.negationCount, 0);
   assert.equal(s.diagnoses, 0);
