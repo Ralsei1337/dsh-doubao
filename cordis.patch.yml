@@ -1,0 +1,7 @@
+# dsh-doubao 插件补丁：插入宿主插件行。
+# 临时停用：把 config.enabled 改成 false（设置页里也能关）。
+- insert:
+    - id: dsh-doubao
+      name: dsh-doubao
+      config:
+        enabled: true
