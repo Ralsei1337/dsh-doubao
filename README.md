@@ -78,6 +78,15 @@
 
 ## 安装
 
+**直接装发布包（推荐）**
+
+```bash
+dsh plugin add https://github.com/Ralsei1337/dsh-doubao/releases/latest/download/dsh-doubao-1.0.0.tgz
+```
+
+**从源码 link**
+
+
 ```jsonc
 // ~/.dsh/profiles/<profile>/package.json
 {
