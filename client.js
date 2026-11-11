@@ -545,9 +545,12 @@ window.__ModuleLoader__.load({
           h('div', { className: 'db-card db-warning db-error' }, error || t('loadError')));
       }
 
-      const preset = PRESETS[draft.level];
+      // 服务端可能是旧版本（没有 level 字段），这里必须兜住，不能让整页崩
+      const level = PRESETS[draft.level] ? draft.level : 'medium';
+      const preset = PRESETS[level];
       const diverged = Boolean(preset) && Object.entries(preset).some(([key, value]) => draft[key] !== value);
       const limits = state?.limits ?? {};
+      const templateTotal = state?.templates?.total ?? 0;
       const bound = (key) => limits[key] ?? [0, 100];
       const modeOptions = [
         { value: 'smart', label: t('modeSmart') },
@@ -578,7 +581,7 @@ window.__ModuleLoader__.load({
             `${t('promptEnabled')} · ${draft.promptEnabled ? t('on') : t('off')}`),
           h('span', { className: `db-pill ${draft.transformEnabled ? 'db-pill-on' : 'db-pill-off'}` },
             `${t('transformEnabled')} · ${draft.transformEnabled ? t('on') : t('off')}`),
-          h('span', { className: 'db-pill' }, `${t('level')}: ${t(`level${draft.level[0].toUpperCase()}${draft.level.slice(1)}`)}`),
+          h('span', { className: 'db-pill' }, `${t('level')}: ${t(`level${level[0].toUpperCase()}${level.slice(1)}`)}`),
           h('span', { className: 'db-pill' }, `${t('mode')}: ${draft.mode}`),
           h('span', { className: 'db-pill' }, `${t('lexiconTotal')} ${state?.lexicon?.total ?? 0}`),
           h('span', { className: 'db-pill' }, state?.entry?.overridden ? t('override') : t('inherited')),
@@ -604,7 +607,7 @@ window.__ModuleLoader__.load({
             t,
             label: t('level'),
             description: t('levelHint'),
-            value: draft.level,
+            value: level,
             diverged: diverged,
             onChange: applyLevel,
           }),
@@ -678,7 +681,7 @@ window.__ModuleLoader__.load({
             ),
             h('div', { className: 'db-stat' },
               h('div', { className: 'db-stat-label' }, 'templates'),
-              h('div', { className: 'db-stat-value' }, String(state?.templates?.total ?? 0)),
+              h('div', { className: 'db-stat-value' }, String(templateTotal)),
             ),
           ),
         ),

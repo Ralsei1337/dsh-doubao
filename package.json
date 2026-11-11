@@ -1,6 +1,6 @@
 {
   "name": "dsh-doubao",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "把 DSH 的模型输出改造成「豆包语」：超长排比 + 否定清单 + 疗愈诊断 + 复读共情 + 服务化收尾。五档强度、双通道、全部参数可调。",
   "type": "module",
   "main": "lib/index.js",

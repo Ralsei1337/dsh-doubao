@@ -230,6 +230,49 @@ assert.equal(
   '自定义词条标题不全',
 );
 
+// 旧服务端（没有 level 字段）不能让整页崩
+{
+  const OLD = JSON.parse(JSON.stringify(STATE));
+  delete OLD.config.level;
+  delete OLD.config.intensity;
+  delete OLD.levels;
+  delete OLD.templates;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, json: async () => OLD });
+  hookIndex = 0;
+  hooks.length = 0;
+  effects.length = 0;
+  const oldTree = sectionInstance.type(sectionInstance.props);
+  for (const effect of effects) effect();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  for (let round = 0; round < 4 && pending; round += 1) {
+    pending = false;
+    hookIndex = 0;
+    effects.length = 0;
+    const next = sectionInstance.type(sectionInstance.props);
+    for (const effect of effects) effect();
+    const flat = flatten(next);
+    assert.ok(flat.some((n) => n.kind === 'text' && n.value === 'level'), '旧服务端下档位区没渲染');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  globalThis.fetch = realFetch;
+  // 恢复成新服务端
+  hookIndex = 0;
+  hooks.length = 0;
+  effects.length = 0;
+  sectionInstance.type(sectionInstance.props);
+  for (const effect of effects) effect();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  for (let round = 0; round < 4 && pending; round += 1) {
+    pending = false;
+    hookIndex = 0;
+    effects.length = 0;
+    tree = sectionInstance.type(sectionInstance.props);
+    for (const effect of effects) effect();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
 // 点「拉满」应套上该档参数
 {
   const buttons = nodes.filter((n) => n.kind === 'element' && n.type === 'button' && String(n.props.className).includes('db-level'));
